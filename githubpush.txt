@@ -1,0 +1,3 @@
+git add .
+git commit -m "今回の変更内容を書く"
+git push

@@ -501,16 +501,29 @@ class DetailPageWidget(QWidget):
     @Slot(str, int)
     def _handle_context_action(self, action_name: str, row: int):
         if action_name == 'add':
-            if row >= 0: self.table.selectRow(row)
+            if row >= 0: # 右クリックされた行があれば、その行を選択状態にする
+                self.table.selectRow(row)
             else: self.table.clearSelection()
             self.add_row()
         elif action_name == 'remove':
-            if row >= 0:
-                self.table.selectRow(row)
+            if row >= 0: # 右クリックされた行が有効な場合
+                # 現在の選択行数を取得
+                selected_indexes = self.table.selectedIndexes()
+                num_selected_rows = len(list(set(idx.row() for idx in selected_indexes)))
+
+                if num_selected_rows <= 1: # 選択行が1行以下の場合、右クリックされた行を選択
+                    self.table.selectRow(row)
+                # 複数行が選択されている場合は、既存の選択をそのまま使用する
                 self.remove_row()
         elif action_name == 'duplicate':
-            if row >= 0:
-                self.table.selectRow(row)
+            if row >= 0: # 右クリックされた行が有効な場合
+                # 現在の選択行数を取得
+                selected_indexes = self.table.selectedIndexes()
+                num_selected_rows = len(list(set(idx.row() for idx in selected_indexes)))
+
+                if num_selected_rows <= 1: # 選択行が1行以下の場合、右クリックされた行を選択
+                    self.table.selectRow(row)
+                # 複数行が選択されている場合は、既存の選択をそのまま使用する
                 self.duplicate_row()
 
     @Slot(int, int)
