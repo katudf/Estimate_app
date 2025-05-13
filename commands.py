@@ -160,24 +160,20 @@ class MoveRowCommand(QUndoCommand):
                     print(f"  DEBUG: Setting item at ({self.actual_dest_row}, {col})")
                     self.table.setItem(self.actual_dest_row, col, data.clone()) # アイテムは再度クローン
                 elif isinstance(data, tuple) and len(data) == 2 and isinstance(data[0], type) and issubclass(data[0], QComboBox):
-                    # --- QComboBox の復元を一時的にコメントアウト ---
-                    print(f"  DEBUG: Skipping setCellWidget for QComboBox at ({self.actual_dest_row}, {col})")
-                    self.table.setItem(self.actual_dest_row, col, QTableWidgetItem("[Widget Placeholder]")) # 代わりにアイテムを設定
-                    # widget_class, properties = data # タプルからクラスとプロパティを取得
-                    # # DetailPageWidget のメソッドを借りて ComboBox を作成・設定
-                    # parent_widget = self.table.parent() # 親ウィジェット(DetailPageWidget)を取得
-                    # if hasattr(parent_widget, '_create_unit_combobox') and callable(parent_widget._create_unit_combobox):
-                    #     combo = parent_widget._create_unit_combobox() # ヘルパーメソッドで作成
-                    #     combo.setCurrentText(properties.get('currentText', '')) # 保存したテキストを設定
-                    #     self.table.setCellWidget(self.actual_dest_row, col, combo) # セルにウィジェットを設定
-                    #     # ウィジェット設定後の確認ログ
-                    #     widget_check = self.table.cellWidget(self.actual_dest_row, col)
-                    #     print(f"  DEBUG: Set widget at ({self.actual_dest_row}, {col}). Widget check: {'Exists' if widget_check else 'None'}")
-                    # else:
-                    #     # メソッドが見つからない場合のエラー処理
-                    #     print(f"ERROR(MoveRow.redo): 親ウィジェットに _create_unit_combobox が見つかりません。({self.actual_dest_row}, {col})")
-                    #     self.table.setItem(self.actual_dest_row, col, QTableWidgetItem("復元エラー")) # エラー表示
-                    # --- ここまでコメントアウト ---
+                    widget_class, properties = data # タプルからクラスとプロパティを取得
+                    # DetailPageWidget のメソッドを借りて ComboBox を作成・設定
+                    parent_widget = self.table.parent() # 親ウィジェット(DetailPageWidget)を取得
+                    if hasattr(parent_widget, '_create_unit_combobox') and callable(parent_widget._create_unit_combobox):
+                        combo = parent_widget._create_unit_combobox() # ヘルパーメソッドで作成
+                        combo.setCurrentText(properties.get('currentText', '')) # 保存したテキストを設定
+                        self.table.setCellWidget(self.actual_dest_row, col, combo) # セルにウィジェットを設定
+                        # ウィジェット設定後の確認ログ (任意)
+                        widget_check = self.table.cellWidget(self.actual_dest_row, col)
+                        print(f"  DEBUG: Set widget at ({self.actual_dest_row}, {col}). Widget check: {'Exists' if widget_check else 'None'}")
+                    else:
+                        # メソッドが見つからない場合のエラー処理
+                        print(f"ERROR(MoveRow.redo): 親ウィジェットに _create_unit_combobox が見つかりません。({self.actual_dest_row}, {col})")
+                        self.table.setItem(self.actual_dest_row, col, QTableWidgetItem("復元エラー")) # エラー表示
                 else:
                     # None の場合
                     print(f"  DEBUG: Setting empty item at ({self.actual_dest_row}, {col}) for None data")
