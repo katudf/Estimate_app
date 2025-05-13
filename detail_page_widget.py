@@ -21,7 +21,8 @@ from typing import List, Optional, Callable # Optional や Callable も使って
 # ↑↑↑ typing から List と Optional をインポート ↑↑↑
 
 from constants import WIDGET_BASE_STYLE, COLOR_LIGHT_GRAY, COLOR_WHITE, COLOR_ERROR_BG
-from commands import AddRowCommand, InsertRowCommand, RemoveRowCommand, MoveRowCommand, ChangeItemCommand, DuplicateRowCommand, RemoveMultipleRowsCommand
+from commands import AddRowCommand, InsertRowCommand, RemoveRowCommand, MoveRowCommand, ChangeItemCommand, DuplicateRowCommand, RemoveMultipleRowsCommand, DuplicateMultipleRowsCommand
+
 from utils import format_currency, format_quantity, parse_number
 
 # ... (クラス定義以降) ...
@@ -826,30 +827,34 @@ class DetailPageWidget(QWidget):
         # 合計更新は stack.indexChanged でトリガーされる想定
     @Slot()
     def duplicate_row(self):
-        """現在選択されている行を複製して、その下に挿入する (UNDO対応)"""
-        current_row = self.table.currentRow()
-        if current_row >= 0: # 行が選択されている場合のみ
-            # 複製する行のデータを取得 (クローンしておく)
-            row_data_cloned = []
-            for col in range(self.table.columnCount()):
-                widget = self.table.cellWidget(current_row, col)
-                item = self.table.item(current_row, col)
-                if widget and isinstance(widget, QComboBox):
-                    # QComboBox の場合はクラスと現在のテキストをタプルで保存
-                    row_data_cloned.append((type(widget), {'currentText': widget.currentText()}))
-                elif item:
-                    # QTableWidgetItem の場合はクローンして保存
-                    row_data_cloned.append(item.clone())
-                else:
-                    # それ以外は None
-                    row_data_cloned.append(None)
+        """
+        現在選択されているすべての行をそれぞれ複製し、元の行の直下に挿入する (UNDO対応)。
+        """
+        selected_ranges = self.table.selectedRanges()
+        if not selected_ranges:
+            QMessageBox.warning(self, "行複写", "複写する行が選択されていません。")
+            return
 
-            command = DuplicateRowCommand(self.table, current_row, row_data_cloned)
+        # 選択されている行のインデックスを取得し、重複を除いて昇順にソート
+        selected_rows = sorted(list(set(index.row() for range_ in selected_ranges for index in self.table.selectedIndexes() if index.row() >= 0)))
+
+        if not selected_rows:
+            QMessageBox.warning(self, "行複写", "複写する行が選択されていません。")
+            return
+
+        # --- 複製するすべての行のデータを事前に取得 ---
+        # {original_row_index: row_data_to_copy} の形式
+        rows_data_to_duplicate = {}
+        for row in selected_rows:
+            rows_data_to_duplicate[row] = self._get_row_data(row)
+
+        if rows_data_to_duplicate:
+            command = DuplicateMultipleRowsCommand(self.table, rows_data_to_duplicate)
             self.undo_stack.push(command)
             # テーブル操作と合計更新はコマンドの redo/undo と indexChanged で行われる
         else:
              # 選択されていない場合はメッセージ表示
-             QMessageBox.warning(self, "行複写エラー", "複写する行が選択されていません。")
+            QMessageBox.information(self, "行複写", "複写対象のデータがありませんでした。")
 
     def _initialize_row(self, row):
         """指定された行のセルを初期化する (特に金額列を編集不可に)"""

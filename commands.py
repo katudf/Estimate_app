@@ -388,6 +388,69 @@ class DuplicateRowCommand(QUndoCommand):
 
 # ... (他の import やクラス定義) ...
 
+class DuplicateMultipleRowsCommand(QUndoCommand):
+    """選択された複数の行をそれぞれ複製し、元の行の直下に挿入するコマンド"""
+    def __init__(self, table: QTableWidget,
+                 source_rows_data_map: Dict[int, List[Optional[QTableWidgetItem | Tuple[Type[QComboBox], Dict]]]],
+                 description: str = "複数行複写"):
+        super().__init__(description)
+        self.table = table
+        # source_rows_data_map: {original_row_index: row_data_to_copy}
+        # キーでソートして、複製元の行インデックスのリストも保持 (降順処理のため)
+        # 昇順でソートしたキーのリストも保持 (まとめて挿入する際の順序のため)
+        self.source_rows_data_map = dict(sorted(source_rows_data_map.items())) # 念のためソート
+        self.source_indices_desc = sorted(source_rows_data_map.keys(), reverse=True)
+        self.source_indices_asc = sorted(source_rows_data_map.keys()) # 昇順のインデックスリスト
+
+        # redo で実際に挿入された行のインデックスを保存 (undo で削除するため)
+        self.inserted_row_indices_in_redo: List[int] = []
+
+    def redo(self):
+        self.table.blockSignals(True)
+        self.inserted_row_indices_in_redo.clear()
+        try:
+            # 元の行インデックスの降順で処理することで、挿入によるインデックスのずれを考慮不要にする
+            # → 修正: 選択範囲の最下行の直下にまとめて挿入
+            if not self.source_indices_asc: # コピー元がない場合は何もしない
+                return
+
+            # 挿入を開始する位置 (選択された行の最下部の元のインデックス + 1)
+            insert_start_row = self.source_indices_desc[0] + 1 # descなので最初の要素が最大
+
+            # 昇順のインデックスリストを使って、元の順序でデータを取得し挿入
+            for i, original_row_index in enumerate(self.source_indices_asc):
+                row_data_to_copy = self.source_rows_data_map[original_row_index]
+                current_insert_pos = insert_start_row + i # 挿入位置を計算
+
+                self.table.insertRow(current_insert_pos)
+                self.inserted_row_indices_in_redo.append(current_insert_pos) # 挿入した位置を記録
+
+                for col, data in enumerate(row_data_to_copy):
+                    if isinstance(data, QTableWidgetItem):
+                        self.table.setItem(current_insert_pos, col, data.clone())
+                    elif isinstance(data, tuple) and len(data) == 2 and isinstance(data[0], type) and issubclass(data[0], QComboBox):
+                        widget_class, properties = data
+                        parent_widget = self.table.parent()
+                        if hasattr(parent_widget, '_create_unit_combobox') and callable(parent_widget._create_unit_combobox):
+                            combo = parent_widget._create_unit_combobox()
+                            combo.setCurrentText(properties.get('currentText', ''))
+                            self.table.setCellWidget(current_insert_pos, col, combo)
+                        else:
+                            self.table.setItem(current_insert_pos, col, QTableWidgetItem("復元エラー"))
+                    else:
+                        self.table.setItem(current_insert_pos, col, QTableWidgetItem(""))
+        finally:
+            self.table.blockSignals(False)
+
+    def undo(self):
+        self.table.blockSignals(True)
+        # redoで挿入した行を削除 (挿入時と逆順＝記録されたインデックスの昇順でアクセスし、降順で削除するのが安全)
+        # self.inserted_row_indices_in_redo は挿入順 (元index降順 -> 挿入位置もほぼ降順) になっているので、
+        # これをソートして降順で削除する
+        for row_to_remove in sorted(self.inserted_row_indices_in_redo, reverse=True):
+            self.table.removeRow(row_to_remove)
+        self.table.blockSignals(False)
+
 class RemoveMultipleRowsCommand(QUndoCommand):
     """複数の行をまとめて削除するコマンド"""
     def __init__(self, table: QTableWidget, rows: List[int], rows_data: Dict[int, List[Optional[QTableWidgetItem | Tuple[Type[QComboBox], Dict]]]], description: str = "複数行削除"):
