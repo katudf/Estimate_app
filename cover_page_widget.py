@@ -255,6 +255,7 @@ class CoverPageWidget(QWidget):
         self.price_label = self._create_label("工事金額")
         self.price_edit = QLineEdit()
         self.price_edit.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.price_edit.setReadOnly(True) # ★★★ この行を追加 ★★★
         if hasattr(self, 'style_price_tax_edit'):
             self.price_edit.setStyleSheet(self.style_price_tax_edit)
 
@@ -360,13 +361,9 @@ class CoverPageWidget(QWidget):
 
     def _connect_signals(self):
         """シグナルとスロット(または他のシグナル)の接続"""
-        # 金額計算
-        if hasattr(self, 'price_edit') and hasattr(self, '_update_totals'):
-             self.price_edit.editingFinished.connect(self._update_totals)
-        else:
-             pass # print("警告: price_edit または _update_totals が未定義のため接続できません。") # デバッグ削除
+        # 金額計算関連の接続は削除またはコメントアウトされている想定
 
-        # 必須項目チェック
+        # 必須項目チェック (ここが正しくインデントされていることを確認)
         if hasattr(self, 'no_edit'):
             self.no_edit.textChanged.connect(self._validate_required_field)
         if hasattr(self, 'client_edit'):
@@ -380,9 +377,9 @@ class CoverPageWidget(QWidget):
         if hasattr(self, 'no_edit'):
             self._apply_required_style(self.no_edit) # no_edit の初期スタイル
 
-        # if hasattr(self, 'detail_button'): # detail_button 関連は削除済み
-        #     self.detail_button.clicked.connect(self.details_requested)
-        # else: ...
+        # もし上記の処理も全てコメントアウト/削除していてメソッド内が空になる場合は、
+        # 以下のように pass を記述します。
+        # pass
 
     # --------------------------------------------------------------------------
     # スロット / データ処理メソッド

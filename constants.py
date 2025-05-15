@@ -1,7 +1,7 @@
 # constants.py
 
 # --- 定数定義 ---
-APP_FONT_FAMILY = "Meiryo UI"
+APP_FONT_FAMILY = "Meiryo UI"  # main.py で使用
 APP_FONT_SIZE = 10
 TABLE_ROWS = 25 # 表紙用テーブル行数 (将来的に見直す可能性あり)
 TABLE_COLS = 26 # 表紙用テーブル列数 (将来的に見直す可能性あり)
@@ -10,7 +10,7 @@ DEFAULT_ROW_HEIGHT = 30
 TAX_RATE = 0.10  # 消費税率 (10%)
 
 # スタイルシート関連定数
-STYLE_BORDER_BLACK = "1px solid black"
+STYLE_BORDER_BLACK = "1px solid black" # cover_page_widget.py で使用
 COLOR_WHITE = "white"
 COLOR_LIGHT_GRAY = "lightgray"
 COLOR_LIGHT_BLUE = "#ddebf7"  # 合計(税込)ラベル背景
@@ -20,6 +20,16 @@ STYLE_NO_BORDER = "border: none;"
 
 # 印影画像のパス
 HANKO_IMAGE_PATH = "hanko.png"
+
+# main.py で使用する定数
+COLOR_STATUS_BAR_BG = "#333333" # 例: 暗いグレー
+COLOR_STATUS_BAR_FG = "white"   # 例: 白文字
+WINDOW_TITLE = "木村塗装工業見積書 作成アプリ"
+WINDOW_WIDTH = 1024
+WINDOW_HEIGHT = 768
+
+ # データベースファイル名
+DATABASE_FILE_NAME = "estimates.db"
 
 # ウィジェット共通スタイル
 WIDGET_BASE_STYLE = f"""
@@ -45,21 +55,27 @@ WIDGET_BASE_STYLE = f"""
         background-color: #cceeff; /* 選択行と同じ背景色を指定 */
         /* 必要なら文字色も指定: color: black; */
     }}
-    QLineEdit, QDateEdit, QTextEdit {{
+    QLineEdit, QDateEdit {{
         background-color: {COLOR_WHITE};
-        color: black; /* 文字色を黒に再指定 */
-        /* 必要に応じてデフォルトの枠線を追加 */
-        /* border: 1px solid gray; */
+        color: black;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        border-bottom: 2px solid gray; /* 下線のみ表示 (色はgrayなどお好みで) */
+        padding: 2px; /* 少し内側に余白を持たせると見栄えが良いです */
     }}
     QLabel {{
         color: black; /* 文字色を黒に再指定 */
         background-color: transparent; /* デフォルト背景を透明に */
     }}
-    QDateEdit::drop-down {{
-         /* border: 1px solid gray; 例: 必要なら */
-         /* subcontrol-origin: padding; */
-         /* subcontrol-position: top right; */
-         /* width: 15px; */
+    QTextEdit {{ /* QTextEdit (備考欄など) は枠線ありのままにする場合 */
+        background-color: {COLOR_WHITE};
+        color: black;
+        border: 1px solid gray;
+    }}
+    QDateEdit::drop-down {{ /* QDateEdit のドロップダウンボタンの枠線も調整が必要な場合 */
+        border: none; /* ボタンの枠線を消すか、下線に合わせる */
+        /* background-color: transparent; */ /* ボタンの背景を透明にするなど */
     }}
     QCheckBox::indicator {{
          width: 15px;
@@ -76,6 +92,6 @@ WIDGET_BASE_STYLE = f"""
         color: black;             /* 文字色を黒に */
         padding: 4px;             /* 内側の余白 */
         border: 1px solid #d0d0d0; /* 枠線 (少し薄いグレー) */
-        font-weight: bold        /* 文字を太字に (任意) */ /* セミコロンを削除 */
+        font-weight: bold        /* 文字を太字に (任意) */
     }}
 """
